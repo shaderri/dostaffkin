@@ -1,9 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Header } from '../../header/header';
 import { DELIVERY_SIZES, DELIVERY_SPEEDS } from './order.config';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { DeliveryApi } from '../../services/delivery-api';
+import { ToastrService } from 'ngx-toastr';
 
 declare var ymaps: any;
 
@@ -16,6 +17,8 @@ declare var ymaps: any;
 export class Order {
   public readonly sizes = DELIVERY_SIZES;
   public readonly speeds = DELIVERY_SPEEDS;
+
+  toastr = inject(ToastrService);
 
   public map: any;
   private mapRoute: any;
@@ -123,18 +126,18 @@ export class Order {
 
   private failedCalculation() {
     this.calculationResult.set(null);
-    alert('Не удалось построить маршрут. Проверьте адреса и выбранные параметры.');
+    this.toastr.error('Не удалось построить маршрут. Проверьте адреса и выбранные параметры.');
   }
 
   public submitOrder() {
     const calculation = this.calculationResult();
     if (!calculation) {
-      alert('Сначала рассчитайте стоимость, чтобы оформить заявку');
+      this.toastr.error('Сначала рассчитайте стоимость, чтобы оформить заявку');
       return;
     }
 
     if (this.orderForm.invalid) {
-      alert('Введите имя и корректный телефон');
+      this.toastr.error('Введите имя и корректный телефон');
       return;
     }
 
@@ -150,10 +153,11 @@ export class Order {
     };
     this.deliveryApi.createDelivery(payload).subscribe((response) => {
       if ('error' in response) {
-        alert(response.error);
+        this.toastr.error(response.error);
         return;
       }
 
+      this.toastr.success('Заявка успешно оформлена!');
       this.orderId.set(response.id);
     });
   }
